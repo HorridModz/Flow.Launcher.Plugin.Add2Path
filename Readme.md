@@ -3,7 +3,7 @@
 Flow.Launcher.Plugin.Add2Path
 ==================
 
-A [Flow launcher](https://github.com/Flow-Launcher/Flow.Launcher) plugin
+A [Flow Launcher](https://github.com/Flow-Launcher/Flow.Launcher) plugin
 for managing your PATH environment variable.
 
 > **Warning**: Dealing with environment variables is dangerous and can break things. Though I have tried to make this plugin as safe to use as I can, I cannot guarantee that it won't break or corrupt your PATH environment variable.
