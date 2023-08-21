@@ -10,8 +10,6 @@ for managing your PATH environment variable.
 >
 > **Use at your own risk. I am not responsible if this plugin breaks things for you.**
 
-> **Important**: Editing the `PATH` (or any other system environment variables) requires administrator priveledges. This means that Flow Launcher will require administrator priveledges every time this plugin is used. To make FlowLauncher always run as administrator, see [#Running as Administrator](#running-as-administrator).
-
 ## Usage
 
 - Add to PATH: `path add <folder_path>`
