@@ -12,12 +12,10 @@ for managing your PATH environment variable.
 
 > **Important**: Editing the `PATH` (or any other system environment variables) requires administrator priveledges. This means that Flow Launcher will require administrator priveledges every time this plugin is used. To make FlowLauncher always run as administrator, see [#Running as Administrator](#running-as-administrator).
 
-### Features
-
 ## Usage
 
-- Add to PATH: `path add <item>`
-- Remove from PATH: `path remove <item>`
+- Add to PATH: `path add <folder_path>`
+- Remove from PATH: `path remove <folder_path>`
 - List all entries in PATH and copy to clipboard: `path list`
 - Get current PATH value (semicolon delimited) and copy to clipboard: `path get`
 
@@ -25,25 +23,6 @@ for managing your PATH environment variable.
 > for it. Plus, completely overwriting your PATH can break a lot of things.
 > If you really want to do it anyway, you can do it manually via the
 > "Edit the system environment variables" screen.
-
-## Running as Administrator
-
-### Finding FlowLauncher exe
-[Default FlowLauncher exe Installation Path]
-[Finding exe Path Via FlowLauncher Query]
-
-### Manual Setup
-
-[Editing Manually]
-
-
-### Command-line Setup
-
-[Editing With Command Line (Copy-Paste)]
-[Command Line Batch Script]
-
-
-## Customization
 
 # Credits
 
