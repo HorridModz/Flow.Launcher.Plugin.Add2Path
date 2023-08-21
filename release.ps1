@@ -1,0 +1,2 @@
+dotnet publish Flow.Launcher.Plugin.Add2Path -c Release -r win-x64 --no-self-contained
+Compress-Archive -LiteralPath Flow.Launcher.Plugin.Add2Path/bin/Release/win-x64/publish -DestinationPath Flow.Launcher.Plugin.Add2Path/bin/Add2Path.zip -Force

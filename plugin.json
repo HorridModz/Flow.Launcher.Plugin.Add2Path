@@ -1,0 +1,12 @@
+{
+    "ID": "79BB35BC5B504F04B210D1C41DF14A02",
+    "ActionKeyword": "path",
+    "Name": "Add2Path",
+    "Description": "Manage your PATH environment variable",
+    "Author": "HorridModz",
+    "Version": "1.0.0",
+    "Language": "csharp",
+    "Website": "https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path",
+    "IcoPath": "icon.png",
+    "ExecuteFileName": "Flow.Launcher.Plugin.Add2Path.dll"
+}
