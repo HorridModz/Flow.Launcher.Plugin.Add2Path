@@ -6,21 +6,96 @@ Flow.Launcher.Plugin.Add2Path
 A [Flow Launcher](https://github.com/Flow-Launcher/Flow.Launcher) plugin
 for managing your PATH environment variable.
 
-> **Warning**: Dealing with environment variables is dangerous and can break things. Though I have tried to make this plugin as safe to use as I can, I cannot guarantee that it won't break or corrupt your PATH environment variable.
+`pm install add2path`
+
+Version 2.0, which features new options, important bug fixes, many improvements, and a complete overhaul,
+is now out! Here's a rundown of the [crucial changes](#new-in-version-20).
+
+> [!Warning]
+> Dealing with environment variables is dangerous and can break things.
+Though I have tried to make this plugin as safe to use as I can, I cannot guarantee that it won't break or
+corrupt your PATH environment variable.
 >
 > **Use at your own risk. I am not responsible if this plugin breaks things for you.**
 
-## Usage
+<br>
+<br>
 
-- Add to PATH: `path add <folder_path>`
-- Remove from PATH: `path remove <folder_path>`
-- List all entries in PATH and copy to clipboard: `path list`
-- Get current PATH value (semicolon delimited) and copy to clipboard: `path get`
+> [!IMPORTANT]
+> Editing system PATH requires administrator priveledges.
+> This means that Flow Launcher will show a popup requesting administrator priveledges
+> every time this plugin is used with the `!system` flag.
+> To make FlowLauncher always run as administrator, see [Running as Administrator](#running-as-administrator).
+
+# Usage
+
+- Add to PATH: `path add <!system or leave blank> <folder path>`
+- Remove from PATH: `path remove <!system or leave blank> <folder path>`
+- List all entries in PATH and copy to clipboard: `path list <!system or leave blank>`
+- Get current PATH value (semicolon delimited) and copy to clipboard: `path get <!system or leave blank>`
 
 > **Note**: There is no `set` command because I can't think of any practical use
 > for it. Plus, completely overwriting your PATH can break a lot of things.
 > If you really want to do it anyway, you can do it manually via the
 > "Edit the system environment variables" screen.
+
+## New in Version 2.0
+Version 2.0 adds the ability to specify **system** PATH.
+While **user** PATH remains the default, you can now add `!system` to the query, and the command will operate on the system PATH rather than the user PATH. This works for all commands.
+
+> For example, instead of `path add C:\foo`, you can type `path add !system C:\foo`.
+
+The `!sytem` flag is case-sensitive. Make sure there are no spaces in it, and that it is a separate term (surrounded with spaces).
+
+The `!system` flag must appear directly after the command (e.g. `add` or `get`), or else it will be interpreted as part of the
+inputted folder path - for example, `path add C:\foo !system` will not trigger the flag; instead, the literal path `C:\foo !system` will be added to the user PATH.
+
+> [!IMPORTANT]
+> Editing system PATH requires administrator privileges.
+> This means that Flow Launcher will show a popup requesting administrator privileges
+> every time this plugin is used with the `!system` flag.
+> To make FlowLauncher always run as administrator, see [Running as Administrator](#running-as-administrator).
+
+#### Other Changes
+
+Besides the addition of the `!system` flag, several major changes are included in this version. These include:
+- An entirely new and reworked interface that makes using the plugin more intuitive
+- A [batch script](Configure_FlowLauncher_AlwaysRunAsAdmin.bat) to configure FlowLauncher to always run as administrator (to
+  allow editing of the system PATH)
+- Several major bug fixes (including input sanitization)
+- Improved error handling and messages
+- Folder path validation
+- A feature to avoid and fix corruption of the PATH environmental variable.
+Along with all these new features, the code has been fully refactored and improved.
+
+# Running as Administrator
+
+### Finding FlowLauncher exe
+By default, FlowLauncher's executable (`Flow.Launcher.exe`) should be installed to `%LocalAppData%\FlowLauncher`.
+However, this may differ if you have the portable version installed.
+
+### Manual Setup
+
+Once you've found Flowlauncher's executable file, you can configure it to always run as administrator:
+1. Open the containing folder (again, should be `%LocalAppData%\FlowLauncher`) in file manager
+2. Right-click the file (`Flow.Launcher.exe`) and select `Properties`
+3. Go to the `Compatibility` tab
+4. Check `Run this program as an administrator`
+5. Hit `OK`
+
+Or, if you want the official Microsoft guide:
+`https://techcommunity.microsoft.com/t5/windows-11/how-to-run-app-as-administrator-by-default-in-windows-11/m-p/3033704`
+
+
+### Command-line Setup
+
+Here's a [script](Configure_FlowLauncher_AlwaysRunAsAdmin.bat) I hacked together with ChatGPT
+that automatically configures FlowLauncher to always run as administrator.
+
+# Todo
+
+- Commands to backup (`path backup <!system or leave blank>`) and restore (`path restore <!system or leave blank>`) PATH
+using a separate environmental variable
 
 # Credits
 

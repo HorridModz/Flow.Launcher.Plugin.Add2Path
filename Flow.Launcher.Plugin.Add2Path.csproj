@@ -1,37 +1,39 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  
-  <PropertyGroup>
-    <TargetFramework>net7.0-windows</TargetFramework>
-    <AssemblyName>Flow.Launcher.Plugin.Add2Path</AssemblyName>
-    <PackageId>Flow.Launcher.Plugin.Add2Path</PackageId>
-    <Authors>HorridModz</Authors>
-    <PackageProjectUrl>https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path</PackageProjectUrl>
-    <RepositoryUrl>https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path</RepositoryUrl>
-    <PackageTags>flow-launcher flow-plugin</PackageTags>
-    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
-    <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Configurations>Debug;Release</Configurations>
-    <Platforms>AnyCPU</Platforms>
-  </PropertyGroup>
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <DebugSymbols>false</DebugSymbols>
-    <DebugType>None</DebugType>
-  </PropertyGroup>
+	<PropertyGroup>
+		<TargetFramework>net7.0-windows</TargetFramework>
+		<AssemblyName>Flow.Launcher.Plugin.Add2Path</AssemblyName>
+		<PackageId>Flow.Launcher.Plugin.Add2Path</PackageId>
+		<Authors>HorridModz</Authors>
+		<PackageProjectUrl>https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path</RepositoryUrl>
+		<PackageTags>flow-launcher flow-plugin</PackageTags>
+		<CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+		<Configurations>Debug;Release</Configurations>
+		<Platforms>AnyCPU</Platforms>
+		<RunPostBuildEvent>OnOutputUpdated</RunPostBuildEvent>
+		<SignAssembly>False</SignAssembly>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <Content Include="plugin.json">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+	<PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+		<DebugSymbols>false</DebugSymbols>
+		<DebugType>None</DebugType>
+	</PropertyGroup>
 
-    <Content Include="icon.png">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="plugin.json">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
 
-  <ItemGroup>
-    <PackageReference Include="Flow.Launcher.Plugin" Version="4.1.0" />
-  </ItemGroup>
+		<Content Include="icon.png">
+			<CopyToOutputDirectory>Always</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Flow.Launcher.Plugin" Version="4.1.0" />
+	</ItemGroup>
 
 </Project>

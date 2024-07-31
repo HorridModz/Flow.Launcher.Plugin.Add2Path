@@ -3,7 +3,6 @@
   <component name="ChangeListManager">
     <list default="true" id="b39993e5-db4c-42d4-8f39-f7ce99a0b410" name="Changes" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/.idea.FlowLauncher Add2Path Plugin/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/.idea.FlowLauncher Add2Path Plugin/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/Readme.md" beforeDir="false" afterPath="$PROJECT_DIR$/Readme.md" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -68,7 +67,7 @@
       <option name="number" value="Default" />
       <option name="presentableId" value="Default" />
       <updated>1692576493233</updated>
-      <workItem from="1692576497171" duration="23408000" />
+      <workItem from="1692576497171" duration="23893000" />
     </task>
     <task id="LOCAL-00001" summary="Made &quot;Launcher&quot; in &quot;&quot;Flow Launcher&quot; capital">
       <created>1692604486975</created>
@@ -84,7 +83,14 @@
       <option name="project" value="LOCAL" />
       <updated>1692607991949</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="Remove admin priveledges required notice in README.md - apparently, it works without them!">
+      <created>1692608296987</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1692608296987</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -96,6 +102,7 @@
     <option name="CLEAR_INITIAL_COMMIT_MESSAGE" value="true" />
     <MESSAGE value="Made &quot;Launcher&quot; in &quot;&quot;Flow Launcher&quot; capital" />
     <MESSAGE value="Fix some mistakes in README" />
-    <option name="LAST_COMMIT_MESSAGE" value="Fix some mistakes in README" />
+    <MESSAGE value="Remove admin priveledges required notice in README.md - apparently, it works without them!" />
+    <option name="LAST_COMMIT_MESSAGE" value="Remove admin priveledges required notice in README.md - apparently, it works without them!" />
   </component>
 </project>
