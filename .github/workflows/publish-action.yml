@@ -1,0 +1,41 @@
+name: Publish Release
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore: 
+      - .github/workflows/*
+      - .gitignore
+      - idea/*
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: '7.0.x'
+          cache: true
+      - name: get version
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'plugin.json'
+          prop_path: 'Version'
+      - run: echo ${{steps.version.outputs.prop}} 
+      - name: Build
+        run: |
+          dotnet publish 'Flow.Launcher.Plugin.Add2Path.csproj' -r win-x64  -c Release -o "Flow.Launcher.Plugin.Add2Path.zip"
+          7z a -tzip "Add2Path${{steps.version.outputs.prop}}.zip" "./Add2Path-${{steps.version.outputs.prop}}/*"
+          rm -r "Add2Path-${{steps.version.outputs.prop}}"
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        with:
+          files: "Add2Path*"
+          tag_name: "v${{steps.version.outputs.prop}}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
