@@ -1,0 +1,60 @@
+name: Publish Release
+
+on:
+  push:
+    branches: [ master ]
+    paths-ignore: 
+      - .github/workflows/*
+      - .gitignore
+      - idea/*
+  workflow_dispatch:
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    
+    steps:
+      - uses: actions/checkout@v3
+      - name: Fetch latest release version
+        id: fetch-latest-release
+        uses: reloc8/action-latest-release-version@1.0.0
+      - name: Get updated version
+        id: updated-version
+        uses: notiz-dev/github-action-json-property@release
+        with:
+          path: 'plugin.json'
+          prop_path: 'Version'
+      - name: Determine if publish release required
+        id: publish-release
+        run: |
+          $updated_ver="${{steps.updated-version.outputs.prop}}"
+          $release_ver="${{ steps.fetch-latest-release.outputs.latest-release }}".replace('v','')
+          if ($updated_ver -ne $release_ver -and "${{github.ref_name}}" -eq 'master') {
+            echo "::set-output name=required::true"
+          }
+          echo "Updated version is $updated_ver"
+          echo "Release version is $release_ver"
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+      - name: Get version
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'plugin.json'
+          prop_path: 'Version'
+      - run: echo ${{steps.version.outputs.prop}}
+      - name: Build
+        run: |
+          dotnet publish 'Flow.Launcher.Plugin.Add2Path.csproj' -r win-x64  -c Release -o "Flow.Launcher.Plugin.Add2Path"
+          7z a -tzip "Add2Path-${{steps.version.outputs.prop}}.zip" "./Flow.Launcher.Plugin.Add2Path/*"
+      - name: Publish
+        uses: softprops/action-gh-release@v1
+        if: steps.publish-release.outputs.required == 'true'
+        with:
+          files: "Add2Path-${{steps.version.outputs.prop}}.zip"
+          tag_name: "v${{steps.version.outputs.prop}}"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
