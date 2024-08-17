@@ -1,31 +1,34 @@
-name: build
+name: Build Pull Request
 
 on:
-  push:
+  pull_request:
     paths-ignore: 
       - .github/workflows/*
       - .gitignore
       - idea/*
-  pull_request:
 
 jobs:
   build:
-
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v3
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v3
-      with:
-        dotnet-version: 7.0.x
-        cache: true
-    - name: Restore dependencies
-      run: dotnet restore
-    - name: Build
-      run: dotnet build --no-restore -c Release
-    - name: Upload Artifact
-      uses: actions/upload-artifact@v2
-      with:
-        name: Add2Path
-        path: Output/Release/Flow.Launcher.Plugin.Add2Path
+      - uses: actions/checkout@v3
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: 7.0.x
+      - name: get version
+        id: version
+        uses: notiz-dev/github-action-json-property@release
+        with: 
+          path: 'plugin.json'
+          prop_path: 'Version'
+      - run: echo ${{steps.version.outputs.prop}}
+      - name: Build
+        run: |
+          dotnet publish 'Flow.Launcher.Plugin.Add2Path.csproj' -c Release -r win-x64 --no-self-contained -o "Add2Path-${{steps.version.outputs.prop}}"
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: 'Add2Path-${{steps.version.outputs.prop}}'
+          path: 'Add2Path-${{steps.version.outputs.prop}}'
