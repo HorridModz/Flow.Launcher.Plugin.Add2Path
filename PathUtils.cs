@@ -92,9 +92,7 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
         // From https://stackoverflow.com/questions/5510343/escape-command-line-arguments-in-c-sharp
         if (string.IsNullOrEmpty(original))
             return original;
-        string value = Regex.Replace(original, @"(\\*)" + "\"", @"$1\$0");
-        value = Regex.Replace(value, @"^(.*\s.*?)(\\*)$", "\"$1$2$2\"");
-        return value;
+        return Regex.Replace(original, @"^(.*\s.*?)(\\*)$", "\"$1$2$2\"");;
     }
 
     private static string _GetRegistryKey(bool system = false)
@@ -148,9 +146,7 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
     
     public static void Set(List<string> folderPaths, bool system = false)
     {
-        // Wrap folder paths in quotes
-        folderPaths = (from folderPath in folderPaths select $"\"{folderPath}\"").ToList();
-        PathUtils.SetFullString(String.Join(";", folderPaths), system);
+        PathUtils.SetFullString(String.Join(";", folderPaths.ToList()), system);
     }
 
     public static bool Contains(string folderPath, bool system = false)
