@@ -93,8 +93,7 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
         if (string.IsNullOrEmpty(original))
             return original;
         string value = Regex.Replace(original, @"(\\*)" + "\"", @"$1\$0");
-        value = Regex.Replace(value, @"^(.*\s.*?)(\\*)$", "\"$1$2$2\"");
-        return value;
+        return Regex.Replace(value, @"^(.*\s.*?)(\\*)$", "\"$1$2$2\"");
     }
 
     private static string _GetRegistryKey(bool system = false)
@@ -148,8 +147,13 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
     
     public static void Set(List<string> folderPaths, bool system = false)
     {
-        // Wrap folder paths in quotes
-        folderPaths = (from folderPath in folderPaths select $"\"{folderPath}\"").ToList();
+        // ?: Windows wraps paths with semicolon (;) as default, 
+        // ?: this way CMD can read path value by discarding path seperator character 
+        // ?: (which is semicolon for in this case) which is between double quotes 
+        // !: But in the other hand path with semicolons won't be working on Powershell because Powershell
+        // !: doesn't trims any double quotes and seperates paths only by checking path seperator character
+        // ?: You can check all the details from https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path/pull/8 
+        folderPaths = (from folderPath in folderPaths select folderPath.Contains(';') ? $"\"{folderPath}\"" : folderPath).ToList();
         PathUtils.SetFullString(String.Join(";", folderPaths), system);
     }
 

@@ -55,7 +55,7 @@ public class Add2Path : IPlugin
         {
             int c = path[i];
 
-            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32)
+            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32 || c == '/')
                 return false;
         }
 
@@ -210,6 +210,9 @@ public class Add2Path : IPlugin
                         Context.API.ShowMsgError("Failed to add to PATH", $"Failed to add {$"\"{folderPath}\""} to {(system ? "system" : "user")} PATH - {ex.Message}");
                         return true;
                     }
+                    if (folderPath.Contains(';')) {
+                        Context.API.ShowMsgError("Warning to Powershell users", "This path won't work in Powershell because it contains a semicolon. For more information, visit https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path/pull/8");
+                    } 
                     Context.API.ShowMsg("Successfully added to PATH", $"Successfully added {$"\"{folderPath}\""} to {(system ? "system" : "user")} PATH.");
                     return true;
                 },
