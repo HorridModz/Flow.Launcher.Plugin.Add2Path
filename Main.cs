@@ -55,7 +55,7 @@ public class Add2Path : IPlugin
         {
             int c = path[i];
 
-            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32 || c == '/')
+            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32)
                 return false;
         }
 
