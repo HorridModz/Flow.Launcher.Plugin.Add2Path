@@ -100,14 +100,9 @@ public class Add2Path : IPlugin
         {
             return false;
         }
-        if (!_IsValidPath(folderPath))
+        if (!_IsValidPath(folderPath) || folderPath.Contains("\""))
         {
             Context.API.ShowMsgError("Invalid PATH Value", $"\"{folderPath}\" is not a valid folder path - verify that the path is correct and valid");
-            return false;
-        }
-        if (folderPath.Contains("/""))
-        {
-            Context.API.ShowMsgError("Invalid PATH Value", "backslashes (\"/\") are not allowed in folder path - replace them with forward slashes.");
             return false;
         }
         if (!IsDirectory(folderPath))
