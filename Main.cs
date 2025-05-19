@@ -48,14 +48,15 @@ public class Add2Path : IPlugin
         Context = context;
     }
 
-    private static bool _IsValidPath(string path)
+    private static bool _IsValidPath(string filePath)
     {
-        // From https://stackoverflow.com/questions/2435894/how-do-i-check-for-illegal-characters-in-a-path (modified)
-        for (var i = 0; i < path.Length; i++)
+        // From https://stackoverflow.com/a/34148976/22081657
+        //    Modified (fixed function by adding '"')
+        for (var i = 0; i < filePath.Length; i++)
         {
-            int c = path[i];
+            int c = filePath[i];
 
-            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32)
+            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c == '"' || c < 32)
                 return false;
         }
 
@@ -100,9 +101,14 @@ public class Add2Path : IPlugin
         {
             return false;
         }
-        if (!_IsValidPath(folderPath) || folderPath.Contains("\""))
+        if (!_IsValidPath(folderPath))
         {
             Context.API.ShowMsgError("Invalid PATH Value", $"\"{folderPath}\" is not a valid folder path - verify that the path is correct and valid");
+            return false;
+        }
+        if (folderPath.Contains("/"))
+        {
+            Context.API.ShowMsgError("Invalid PATH Value", "backslashes (\"/\") are not allowed in PATH - replace them with forward slashes.");
             return false;
         }
         if (!IsDirectory(folderPath))
