@@ -4,7 +4,7 @@
     "Name": "Add2Path",
     "Description": "Manage your PATH environment variable",
     "Author": "HorridModz",
-    "Version": "2.0.2",
+    "Version": "2.0.3",
     "Language": "csharp",
     "Website": "https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path",
     "IcoPath": "icon.png",
