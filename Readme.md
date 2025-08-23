@@ -65,7 +65,7 @@ To restore the manual backup, use the `!manual` flag:
 
 `path restore !manual <!system or leave blank>`
 
-> [!NOTE]
+> [!CAUTION]
 > Make sure to be careful whether you're backing up / restoring the **user** PATH or the **system** PATH.
 
 > [!NOTE]
@@ -73,8 +73,7 @@ To restore the manual backup, use the `!manual` flag:
 > `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path` for the system path.
 > Add2Path's Backups are written under the same keys, with the entry names `PathBackup` / `PathBackupManual`.
 >
-> These values are stored in these locations they are logical places, but the registry keys shouldn't accessed by anything besides
-> Add2Path.
+> These registry keys are stored in these locations because they are logical places, but they shouldn't be accessed by anything other than Add2Path.
 
 ## New in Version 2.0
 
