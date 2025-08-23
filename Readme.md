@@ -70,6 +70,9 @@ Along with all these new features, the code has been fully refactored and improv
 
 # Running as Administrator
 
+> [!CAUTION]
+> Long after writing this, I've just discovered that Windows prevents apps from running as administrator on startup. FlowLauncher will **fail** to run on startup if you configure it to always run as administrator; you will have to launch it manually every time.
+
 ### Finding FlowLauncher exe
 By default, FlowLauncher's executable (`Flow.Launcher.exe`) should be installed to `%LocalAppData%\FlowLauncher`.
 However, this may differ if you have the portable version installed.
