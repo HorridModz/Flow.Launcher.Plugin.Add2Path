@@ -4,9 +4,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
-using JetBrains.Annotations;
-using Microsoft.Win32;
+using System.ComponentModel;
 
 namespace Flow.Launcher.Plugin.Add2Path;
 
@@ -30,11 +28,30 @@ public class AlreadyInPathException : Exception
     
 }
 
+public class CommandErrorException : Exception
+{
+
+    public CommandErrorException(string message)
+        : base(message)
+    {
+    }
+}
+
+
+public class RegistryEntryNotFoundException : Exception
+{
+
+    public RegistryEntryNotFoundException(string message)
+        : base(message)
+    {
+    }
+}
+
 
 internal static class PathUtils // Renamed from Path to PathUtils, to avoid naming conflict with System.IO.Path
 {
 
-    private static string _ExecuteCommand(string command, bool requestadmin = false)
+    private static string _ExecuteCommand(string command, bool requestadmin = false, bool throwerrors = true)
     {
         /*
          * Oh boy, this took me ages. Let me explain...
@@ -63,13 +80,14 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
         process2.Start();
         process2.WaitForExit();
         */
-        string tempfile = Path.GetTempFileName();
+        string stdout_file = Path.GetTempFileName();
+        string stderr_file = Path.GetTempFileName();
         Process process = new Process()
         {
             StartInfo = new ProcessStartInfo
             {
                 FileName = "cmd.exe",
-                Arguments = $"/c {command} > \"{tempfile}\"",
+                Arguments = $"/c ({command}) > \"{stdout_file}\" 2> \"{stderr_file}\"",
                 RedirectStandardOutput = false,
                 UseShellExecute = true,
                 CreateNoWindow = true,
@@ -82,39 +100,144 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
 
         process.Start();
         process.WaitForExit();
-        string output = File.ReadAllText(tempfile).TrimEnd();
-        File.Delete(tempfile);
+        string output = File.ReadAllText(stdout_file).TrimEnd();
+        string stderr = File.ReadAllText(stderr_file).TrimEnd();
+        File.Delete(stdout_file);
+        File.Delete(stderr_file);
+
+        if (throwerrors && !string.IsNullOrEmpty(stderr)) {
+            throw new CommandErrorException(stderr);
+        }
         return output;
     }
+
+    private static string _GetFromRegistry(string registrykey, string entry, bool requestadmin = false)
+    {
+        string resulttext;
+        try
+        {
+            resulttext = _ExecuteCommand($"for /f \"tokens=2*\" %a in ('REG QUERY {_EncodeParameterArgument(registrykey)} /v {_EncodeParameterArgument(entry)}" +
+                                         $" ^| findstr {_EncodeParameterArgument(entry)}') do @if not \"%b\"==\"\" echo %b", requestadmin);
+        }
+        catch (Win32Exception)
+        {
+            throw new Exception($"Failed to get registry entry - admin access was denied, or a different Windows error occurred");
+        }
+        catch (CommandErrorException ex)
+        {
+            if (ex.Message.Contains("ERROR: The system was unable to find the specified registry key or value."))
+            {
+                throw new RegistryEntryNotFoundException($"Failed to get registry entry - this key or value does not exist");
+            } else
+            {
+                throw;
+            }
+        }
+        return resulttext;
+    }
+
+    private static string _SetRegistryEntry(string registrykey, string entry, string value, bool requestadmin = false)
+    {
+        try
+        {
+            return _ExecuteCommand($"reg add {_EncodeParameterArgument(registrykey)} /v {_EncodeParameterArgument(entry)} /d {_EncodeParameterArgument(value)} /f", requestadmin);
+        }
+        catch (Win32Exception)
+        {
+            throw new Exception($"Failed to set registry key - admin access was denied, or a different Windows error occurred");
+        }
+    }
+
 
     public static string _EncodeParameterArgument(string original)
     {
         // From https://stackoverflow.com/questions/5510343/escape-command-line-arguments-in-c-sharp
-        if (string.IsNullOrEmpty(original))
-            return original;
+        /*
+         * The code:
+            if (string.IsNullOrEmpty(original))
+                return original;
+         * Causes a bug. It leads to a blank string being returned as a blank string, not "":
+			   EncodeParameterArgument("") -> ""; not "\"\""
+         * This behavior is not always wrong, but with the reg add command, passing nothing
+         * instead of "" breaks the command.
+        */
         string value = Regex.Replace(original, @"(\\*)" + "\"", @"$1\$0");
         value = Regex.Replace(value, @"^(.*\s.*?)(\\*)$", "\"$1$2$2\"");
+        value = $"\"{value.Trim('"')}\"";
         return value;
     }
 
-    private static string _GetRegistryKey(bool system = false)
+    private static string _GetPathRegistryKey(bool system = false)
     {
         return system ? """HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment""" : """HKEY_CURRENT_USER\Environment""";
     }
 
     public static string GetFullString(bool system = false)
     {
-        string registrykey = _GetRegistryKey(system);
         try
         {
-            return _ExecuteCommand($"for /f \"tokens=2*\" %a in ('REG QUERY \"{registrykey}\" /v \"Path\" ^| findstr \"Path\"') do @echo %b", system);
+            return _GetFromRegistry(_GetPathRegistryKey(system), "Path", system);
         }
-        catch (System.ComponentModel.Win32Exception)
+        catch (Win32Exception)
         {
-            throw new Exception($"Failed to set path - admin access was denied, or a different Windows error occurred");
+            throw new Exception($"Failed to get PATH - admin access was denied, or a different Windows error occurred");
         }
     }
-    
+
+    public static void SetFullString(string value, bool system = false)
+    {
+        string resulttext;
+        try
+        {
+            resulttext = _SetRegistryEntry(_GetPathRegistryKey(system), "Path", value, system);
+        }
+        catch (Win32Exception)
+        {
+            throw new Exception($"Failed to set PATH - admin access was denied, or a different Windows error occurred");
+        }
+    }
+
+
+    private static string _GetBackup(bool last_manual = false, bool system = false)
+    {
+        try
+        {
+            return _GetFromRegistry(_GetPathRegistryKey(system), last_manual ? "PathBackupManual" : "PathBackup", system);
+        }
+        catch (RegistryEntryNotFoundException)
+        {
+            if (last_manual)
+            {
+                throw new Exception($"Failed to get backup - no manual backup has been created (perhaps you meant to restore the last automatic backup?)");
+            }
+            else
+            {
+                throw new Exception($"Failed to get backup - no automatic backups have been created (perhaps you meant to restore the last manual backup?)");
+            }
+        }
+        catch (Win32Exception)
+        {
+            throw new Exception($"Failed to get backup - admin access was denied, or a different Windows error occurred");
+        }
+    }
+
+    private static void _SetBackup(string value, bool manual, bool system = false)
+    {
+        string resulttext;
+        try
+        {
+            resulttext = _SetRegistryEntry(_GetPathRegistryKey(system), manual ? "PathBackupManual" : "PathBackup", value, system);
+        }
+        catch (Win32Exception)
+        {
+            throw new Exception($"Failed to set backup - admin access was denied, or a different Windows error occurred");
+        }
+        if (!resulttext.Contains("The operation completed successfully."))
+        {
+            throw new Exception($"Failed to set backup - got output: {resulttext}");
+        }
+    }
+
     public static List<string> Get(bool system = false)
     {
         string pathstring = PathUtils.GetFullString(system);
@@ -127,25 +250,8 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
         folderPaths.RemoveAll(String.IsNullOrWhiteSpace);
         return folderPaths;
     }
-    
-    
-    public static void SetFullString(string value, bool system = false)
-    {
-        string registrykey = _GetRegistryKey(system);
-        string resulttext;
-        try
-        {
-            resulttext = _ExecuteCommand($"reg add \"{registrykey}\" /v Path /d {_EncodeParameterArgument(value)} /f", system);
-        } catch (System.ComponentModel.Win32Exception)
-        {
-            throw new Exception($"Failed to set path - admin access was denied, or a different Windows error occurred");
-        }
-        if (!resulttext.Contains("The operation completed successfully."))
-        {
-            throw new Exception($"Failed to set path - got output: {resulttext}");
-        }
-    }
-    
+
+
     public static void Set(List<string> folderPaths, bool system = false)
     {
         // Wrap folder paths in quotes
@@ -182,5 +288,15 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
         List<string> folderPaths = PathUtils.Get(system);
         folderPaths.RemoveAll(existing_folder_path => existing_folder_path == folderPath);
         PathUtils.Set(folderPaths, system);
+    }
+
+    public static void Backup(bool manual = false, bool system = false)
+    {
+        _SetBackup(GetFullString(system), manual, system);
+    }
+
+    public static void Restore(bool last_manual = false, bool system = false)
+    {
+        SetFullString(_GetBackup(last_manual, system), system);
     }
 }

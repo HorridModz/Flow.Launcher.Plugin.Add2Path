@@ -29,17 +29,56 @@ corrupt your PATH environment variable.
 
 # Usage
 
+All commands operate on the user PATH by default. Supply the `!system` flag (before the argument, if there is one) to operate on the system PATH -
+for more info, see [System PATH](#system-path).
+
 - Add to PATH: `path add <!system or leave blank> <folder path>`
 - Remove from PATH: `path remove <!system or leave blank> <folder path>`
 - List all entries in PATH and copy to clipboard: `path list <!system or leave blank>`
 - Get current PATH value (semicolon delimited) and copy to clipboard: `path get <!system or leave blank>`
 
-> **Note**: There is no `set` command because I can't think of any practical use
+#### Backup and Restore (for more info, see [Backup and Restore](#backup-and-restore)):
+
+- Manually backup the PATH: `path backup <!system or leave blank>`
+- Restore the PATH from the last automatic backup: `path restore <!system or leave blank>`
+- Restore the PATH from the last manual backup: `path restore !manual <!system or leave blank>`
+
+> [!NOTE]: There is no `set` command because I can't think of any practical use
 > for it. Plus, completely overwriting your PATH can break a lot of things.
 > If you really want to do it anyway, you can do it manually via the
 > "Edit the system environment variables" screen.
 
+## Backup and Restore
+
+Every time you make a change to the PATH variable using Add2Path, a backup will be created. This backup will persist until the next
+change is made with Add2Path.
+To restore the backup, use:
+
+`path restore <!system or leave blank>`
+
+You can also create a manual backup. This backup is independent of the automatic one, and will persist until the next manual backup.
+
+`path backup <!system or leave blank>`
+
+To restore the manual backup, use the `!manual` flag:
+
+`path restore !manual <!system or leave blank>`
+
+> [!NOTE]
+> Make sure to be careful whether you're backing up / restoring the **user** PATH or the **system** PATH.
+
+> [!NOTE]
+> The Windows `PATH` value is stored in the registry as `HKEY_CURRENT_USER\Environment\Path`, and
+> `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path` for the system path.
+> Add2Path's Backups are written under the same keys, with the entry names `PathBackup` / `PathBackupManual`.
+>
+> These values are stored in these locations they are logical places, but the registry keys shouldn't accessed by anything besides
+> Add2Path.
+
 ## New in Version 2.0
+
+### System PATH
+
 Version 2.0 adds the ability to specify **system** PATH.
 While **user** PATH remains the default, you can now add `!system` to the query, and the command will operate on the system PATH rather than the user PATH. This works for all commands.
 
