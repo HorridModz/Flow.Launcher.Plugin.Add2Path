@@ -43,7 +43,8 @@ for more info, see [System PATH](#system-path).
 - Restore the PATH from the last automatic backup: `path restore <!system or leave blank>`
 - Restore the PATH from the last manual backup: `path restore !manual <!system or leave blank>`
 
-> [!NOTE]: There is no `set` command because I can't think of any practical use
+> [!NOTE]:
+> There is no `set` command because I can't think of any practical use
 > for it. Plus, completely overwriting your PATH can break a lot of things.
 > If you really want to do it anyway, you can do it manually via the
 > "Edit the system environment variables" screen.
