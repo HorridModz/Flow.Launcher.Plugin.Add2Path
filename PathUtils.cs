@@ -71,7 +71,7 @@ internal static class PathUtils // Renamed from Path to PathUtils, to avoid nami
                 FileName = "cmd.exe",
                 Arguments = $"/c {command} > \"{tempfile}\"",
                 RedirectStandardOutput = false,
-                UseShellExecute = true,
+                UseShellExecute = false,
                 CreateNoWindow = true,
             }
         };
