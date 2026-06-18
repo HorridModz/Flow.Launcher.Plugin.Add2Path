@@ -2,11 +2,20 @@ using System;
 using System.Collections.Generic;
 using Flow.Launcher.Plugin;
 using System.Windows;
+using System.Linq.Expressions;
+using System.Diagnostics;
 using System.IO;
+using System.Text.RegularExpressions;
+using System.IO.Compression;
+using System.Runtime.InteropServices;
+using System.Collections;
 using System.Linq;
+using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel;
+using Microsoft.VisualBasic;
 
 namespace Flow.Launcher.Plugin.Add2Path;
+
 
 public class Add2Path : IPlugin
 {
@@ -22,10 +31,6 @@ public class Add2Path : IPlugin
         public string GetDefaultSubtitle()
         {
             string buildSubtitle = Name;
-            if (Description.Contains("<manual_or_automatic>"))
-            {
-                buildSubtitle += " <!manual or leave blank>";
-            }
             if (Description.Contains("<system_or_user>"))
             {
                 buildSubtitle += " <!system or leave blank>";
@@ -38,32 +43,27 @@ public class Add2Path : IPlugin
         }
     }
 
-    public enum Flag
-    {
-        System,
-        Manual
-    }
-
     public void Init(PluginInitContext context)
     {
         Context = context;
     }
 
-    private static bool _IsValidPath(string path)
+    private static bool _IsValidPath(string filePath)
     {
-        // From https://stackoverflow.com/questions/2435894/how-do-i-check-for-illegal-characters-in-a-path (modified)
-        for (var i = 0; i < path.Length; i++)
+        // From https://stackoverflow.com/a/34148976/22081657
+        //    Modified (fixed function by adding '"')
+        for (var i = 0; i < filePath.Length; i++)
         {
-            int c = path[i];
+            int c = filePath[i];
 
-            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c < 32)
+            if (c == '<' || c == '>' || c == '|' || c == '*' || c == '?' || c == '"' || c < 32)
                 return false;
         }
 
         return true;
     }
 
-    private static bool _IsDirectory(string path)
+    private static bool IsDirectory(string path)
     {
         // From https://learn.microsoft.com/en-us/answers/questions/1128930/c-filedirectory-check and https://stackoverflow.com/a/1395226/22081657
         try
@@ -79,41 +79,39 @@ public class Add2Path : IPlugin
         }
     }
 
-    private static void _ParseValuePart(string valuepart, out List<Flag> flags, out string? folderPath)
+    private static void ParseValuePart(string valuepart, out string? folderPath, out bool system)
     {
-        flags = new List<Flag>();
-        Dictionary<string, Flag> potentialFlags = new Dictionary<string, Flag> { { "system", Flag.System }, { "manual", Flag.Manual } };
-        while (potentialFlags.Keys.Any(flagstring => valuepart.StartsWith($"!{flagstring}"))) {
-            foreach ((string flagstring, Flag flag)  in potentialFlags)
-            {
-                if (valuepart.StartsWith($"!{flagstring}"))
-                {
-                    flags.Add(flag);
-                    valuepart = valuepart[$"!{flagstring}".Length..].TrimStart();
-                    break;
-                }
-            }
+        system = false;
+        folderPath = valuepart;
+        if (valuepart.StartsWith("!system")) 
+        {
+            system = true;
+            folderPath = valuepart["!system".Length..].TrimStart();
         }
-
-        folderPath = valuepart.Trim(new char[3] { '"', ' ', '\t' }); // trim whitespace and quotes
+        folderPath = folderPath.Trim(new char[3] { '"', ' ', '\t' }); // trim whitespace and quotes
         if (folderPath == "")
         {
             folderPath = null;
         }
     }
 
-    private bool _ValidateFolderPath(string? folderPath)
+    private bool ValidateFolderPath(string? folderPath)
     {
         if (String.IsNullOrWhiteSpace(folderPath))
         {
             return false;
         }
-        if (!_IsValidPath(folderPath) || folderPath.Contains("\""))
+        if (!_IsValidPath(folderPath))
         {
             Context.API.ShowMsgError("Invalid PATH Value", $"\"{folderPath}\" is not a valid folder path - verify that the path is correct and valid");
             return false;
         }
-        if (!_IsDirectory(folderPath))
+        if (folderPath.Contains("/"))
+        {
+            Context.API.ShowMsgError("Invalid PATH Value", "backslashes (\"/\") are not allowed in PATH - replace them with forward slashes.");
+            return false;
+        }
+        if (!IsDirectory(folderPath))
         {
             Context.API.ShowMsg("WARNING: This is a file path", $"PATH is for folder paths, but \"{folderPath}\" is a file path. File paths are ignored in PATH." +
                                                                 " To add this file to PATH, add the folder it is in rather than the file itself.");
@@ -125,7 +123,7 @@ public class Add2Path : IPlugin
         return true;
     }
 
-    private static string _getResultSubtitle(Add2PathCommand command, Query query)
+    private static string getResultSubtitle(Add2PathCommand command, Query query)
     {
         // When blank, list all args: Like "add <!system or leave blank> <folder path>" or get <!system or leave blank>
         string blankSubtitle = !String.IsNullOrEmpty(query.ActionKeyword) ? $"{query.ActionKeyword} {command.GetDefaultSubtitle()}" : command.GetDefaultSubtitle();
@@ -138,17 +136,14 @@ public class Add2Path : IPlugin
         {
             return blankSubtitle;
         }
-        _ParseValuePart(valuepart, out List<Flag> flags, out string ? folderPath);
-        
-
+        ParseValuePart(valuepart, out string? folderPath, out bool system);
         string subtitle = command.Description;
         subtitle = folderPath is not null ? subtitle.Replace("<folder_path>", $"\"{folderPath}\"") : subtitle;
-        subtitle = flags.Contains(Flag.Manual) ? subtitle.Replace("<manual_or_automatic>", "last manual") : subtitle.Replace("<manual_or_automatic>", "last automatic");
-        subtitle = flags.Contains(Flag.System) ? subtitle.Replace("<system_or_user>", "system") : subtitle.Replace("<system_or_user>", "user");
+        subtitle = system ? subtitle.Replace("<system_or_user>", "system") : subtitle.Replace("<system_or_user>", "user");
         return subtitle;
     }
 
-    private static List<Result> _GetMatchedResults(List<Result> allResults, string searchQuery)
+    private static List<Result> GetMatchedResults(List<Result> allResults, string searchQuery)
     {
         /* Finds all matched results based on the user's query
          * A result is considered a match if its title is contained in the user's input
@@ -187,7 +182,6 @@ public class Add2Path : IPlugin
 
     public List<Result> Query(Query query)
     {
-        // Note: Commands are in order of appearance (if they are reordered, the order FlowLauncher displays them in will also change)
         List<Add2PathCommand> commands = new List<Add2PathCommand>
         {
             new Add2PathCommand
@@ -201,49 +195,31 @@ public class Add2Path : IPlugin
                         return false;
                     }
                     string valuepart = query.Search.TrimStart()["add".Length..].TrimStart();
-                    _ParseValuePart(valuepart, out List<Flag> flags, out string ? folderPath);
-                    if (folderPath is null || !_ValidateFolderPath(folderPath))
+                    ParseValuePart(valuepart, out string? folderPath, out bool system);
+                    if (folderPath is null || !ValidateFolderPath(folderPath))
                     {
                         return false;
                     }
-                    if (flags.Contains(Flag.Manual))
-                    {
-                        Context.API.ShowMsg("Invalid flag", "This command does not accept the !manual flag");
-                        return true;
-                    }
 
-                    bool contains;
-                    try {
-                        contains = PathUtils.Contains(folderPath, flags.Contains(Flag.System));
-                    }
-                    catch (Exception ex) {
-                        Context.API.ShowMsgError("Failed to add to PATH", $"Failed to add {$"\"{folderPath}\""} to {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
+                    if (PathUtils.Contains(folderPath, system))
+                    {
+                        Context.API.ShowMsg($"Cannot add {$"\"{folderPath}\""} to {(system ? "system" : "user")} PATH because it is already in {(system ? "system" : "user")} PATH.");
                         return true;
                     }
-                    if (contains)
-                    {
-                        Context.API.ShowMsg($"Cannot add {$"\"{folderPath}\""} to {(flags.Contains(Flag.System) ? "system" : "user")} PATH because it is already in {(flags.Contains(Flag.System) ? "system" : "user")} PATH.");
-                        return true;
-                    }
-                    try
-                    {
-                        PathUtils.Backup(false, flags.Contains(Flag.System));
-                    }
-                    catch (Exception ex)
-                    {
-                        Context.API.ShowMsg("Warning: Failed to create backup of PATH", $"Failed to create a backup of {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
-                    }
                     try {
-                        PathUtils.Add(folderPath, flags.Contains(Flag.System));
-                        if (!PathUtils.Contains(folderPath, flags.Contains(Flag.System)))
+                        PathUtils.Add(folderPath, system);
+                        if (!PathUtils.Contains(folderPath, system))
                         {
                             throw new Exception("Sanity check: Though no errors were detected, value is still not in PATH.");
                         }
                     } catch (Exception ex){
-                        Context.API.ShowMsgError("Failed to add to PATH", $"Failed to add {$"\"{folderPath}\""} to {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
+                        Context.API.ShowMsgError("Failed to add to PATH", $"Failed to add {$"\"{folderPath}\""} to {(system ? "system" : "user")} PATH - {ex.Message}");
                         return true;
                     }
-                    Context.API.ShowMsg("Successfully added to PATH", $"Successfully added {$"\"{folderPath}\""} to {(flags.Contains(Flag.System) ? "system" : "user")} PATH.");
+                    if (folderPath.Contains(';')) {
+                        Context.API.ShowMsgError("Warning to Powershell users", "This path won't work in Powershell because it contains a semicolon. For more information, visit https://github.com/HorridModz/Flow.Launcher.Plugin.Add2Path/pull/8");
+                    } 
+                    Context.API.ShowMsg("Successfully added to PATH", $"Successfully added {$"\"{folderPath}\""} to {(system ? "system" : "user")} PATH.");
                     return true;
                 },
             },
@@ -258,54 +234,33 @@ public class Add2Path : IPlugin
                         return false;
                     }
                     string valuepart = query.Search.TrimStart()["remove".Length..].TrimStart();
-                    _ParseValuePart(valuepart, out List<Flag> flags, out string ? folderPath);
-                    if (folderPath is null || !_ValidateFolderPath(folderPath))
+                    ParseValuePart(valuepart, out string? folderPath, out bool system);
+                    if (folderPath is null || !ValidateFolderPath(folderPath))
                     {
                         return false;
                     }
-                    if (flags.Contains(Flag.Manual))
-                    {
-                        Context.API.ShowMsg("Invalid flag", "This command does not accept the !manual flag");
-                        return true;
-                    }
 
-                    bool contains;
-                    try {
-                        contains = PathUtils.Contains(folderPath, flags.Contains(Flag.System));
-                    }
-                    catch (Exception ex) {
-                        Context.API.ShowMsgError("Failed to remove from PATH", $"Failed to remove {$"\"{folderPath}\""} from {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
-                        return true;
-                    }
-                    if (!contains)
+                    if (!PathUtils.Contains(folderPath, system))
                     {
                         Context.API.ShowMsg("Folder is not in PATH",
-                                            $"Cannot remove {$"\"{folderPath}\""} from {(flags.Contains(Flag.System) ? "system" : "user")} PATH because it is not in PATH." +
+                                            $"Cannot remove {$"\"{folderPath}\""} from {(system ? "system" : "user")} PATH because it is not in PATH." +
                                             $" Double-check the file path and whether it is in system or user PATH." +
                                             $" Use the \"{query.ActionKeyword} list\" command to list all items in PATH.");
                         return true;
                     }
-                    try
-                    {
-                        PathUtils.Backup(false, flags.Contains(Flag.System));
-                    }
-                    catch (Exception ex)
-                    {
-                        Context.API.ShowMsg("Warning: Failed to create backup of PATH", $"Failed to create a backup of {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
-                    }
                     try {
-                        PathUtils.Remove(folderPath, flags.Contains(Flag.System));
-                        if (PathUtils.Contains(folderPath, flags.Contains(Flag.System)))
+                        PathUtils.Remove(folderPath, system);
+                        if (PathUtils.Contains(folderPath, system))
                         {
                             throw new Exception("Sanity check: Though no errors were detected, value is still in PATH.");
                         }
                     } catch (Exception ex){
                         Context.API.ShowMsgError($"Failed to remove from PATH",
-                            $"Failed to remove {$"\"{folderPath}\""} from {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
+                            $"Failed to remove {$"\"{folderPath}\""} from {(system ? "system" : "user")} PATH - {ex.Message}");
                         return true;
                     }
                     Context.API.ShowMsg($"Successfully removed from PATH",
-                        $"Successfully removed {$"\"{folderPath}\""} from {(flags.Contains(Flag.System) ? "system" : "user")} PATH.");
+                        $"Successfully removed {$"\"{folderPath}\""} from {(system ? "system" : "user")} PATH.");
                     return true;
                 },
             },
@@ -321,24 +276,19 @@ public class Add2Path : IPlugin
                         return false;
                     }
                     string valuepart = query.Search.TrimStart()["list".Length..].TrimStart();
-                    _ParseValuePart(valuepart, out List<Flag> flags, out string ? folderPath);
-                    if (flags.Contains(Flag.Manual))
-                    {
-                        Context.API.ShowMsg("Invalid flag", "This command does not accept the !manual flag");
-                        return true;
-                    }
+                    ParseValuePart(valuepart, out _, out bool system);
 
                     string pathliststring;
                     try
                     {
-                        pathliststring = String.Join("\n", PathUtils.Get(flags.Contains(Flag.System)));
+                        pathliststring = String.Join("\n", PathUtils.Get(system));
                     } catch (Exception ex)
                     {
-                        Context.API.ShowMsgError("Failed to get PATH list", $"Failed to get {(flags.Contains(Flag.System) ? "system" : "user")} PATH list - {ex.Message}");
+                        Context.API.ShowMsgError("Failed to get PATH list", $"Failed to get {(system ? "system" : "user")} PATH list - {ex.Message}");
                         return true;
                     }
                     Clipboard.SetText(pathliststring);
-                    Context.API.ShowMsg($"Copied {(flags.Contains(Flag.System) ? "system" : "user")} PATH to clipboard");
+                    Context.API.ShowMsg($"Copied {(system ? "system" : "user")} PATH to clipboard");
                     return true;
                 },
             },
@@ -354,94 +304,30 @@ public class Add2Path : IPlugin
                         return false;
                     }
                     string valuepart = query.Search.TrimStart()["get".Length..].TrimStart();
-                    _ParseValuePart(valuepart, out List<Flag> flags, out string ? folderPath);
-                    if (flags.Contains(Flag.Manual))
-                    {
-                        Context.API.ShowMsg("Invalid flag", "This command does not accept the !manual flag");
-                        return true;
-                    }
+                    ParseValuePart(valuepart, out _, out bool system);
 
                     string pathstring;
                     try
                     {
-                        pathstring = PathUtils.GetFullString(flags.Contains(Flag.System));
+                        pathstring = PathUtils.GetFullString(system);
                     } catch (Exception ex)
                     {
-                        Context.API.ShowMsgError("Failed to get PATH", $"Failed to get {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
+                        Context.API.ShowMsgError("Failed to get PATH", $"Failed to get {(system ? "system" : "user")} PATH - {ex.Message}");
                         return true;
                     }
                     Clipboard.SetText(pathstring);
-                    Context.API.ShowMsg($"Copied {(flags.Contains(Flag.System) ? "system" : "user")} PATH to clipboard");
-                    return true;
-                },
-            },
-
-            new Add2PathCommand
-            {
-                Name = "backup",
-                Description = "Create backup of <system_or_user> PATH",
-                Action = c =>
-                {
-                    if (!query.Search.TrimStart().StartsWith("backup"))
-                    {
-                        return false;
-                    }
-                    string valuepart = query.Search.TrimStart()["backup".Length..].TrimStart();
-                    _ParseValuePart(valuepart, out List<Flag> flags, out _);
-                    if (flags.Contains(Flag.Manual))
-                    {
-                        Context.API.ShowMsg("Invalid flag", "This command does not accept the !manual flag");
-                        return true;
-                    }
-
-                    try
-                    {
-                        PathUtils.Backup(true, flags.Contains(Flag.System));
-                    }
-                    catch (Exception ex)
-                    {
-                        Context.API.ShowMsgError("Failed to create backup of PATH", $"Failed to backup {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
-                        return true;
-                    }
-                    Context.API.ShowMsg($"Successfully backed up {(flags.Contains(Flag.System) ? "system" : "user")} PATH");
-                    return true;
-                },
-            },
-
-            new Add2PathCommand
-            {
-                Name = "restore",
-                Description = "Restore <system_or_user> PATH from <manual_or_automatic> backup",
-                Action = c =>
-                {
-                    if (!query.Search.TrimStart().StartsWith("restore"))
-                    {
-                        return false;
-                    }
-                    string valuepart = query.Search.TrimStart()["restore".Length..].TrimStart();
-                    _ParseValuePart(valuepart, out List<Flag> flags, out _);
-
-                    try
-                    {
-                        PathUtils.Restore(flags.Contains(Flag.Manual), flags.Contains(Flag.System));
-                    } catch (Exception ex)
-                    {
-                        Context.API.ShowMsgError("Failed to restore PATH from backup", $"Failed to restore {(flags.Contains(Flag.System) ? "system" : "user")} PATH - {ex.Message}");
-                        return true;
-                    }
-                    Context.API.ShowMsg($"Successfully restored {(flags.Contains(Flag.System) ? "system" : "user")} PATH from backup");
+                    Context.API.ShowMsg($"Copied {(system ? "system" : "user")} PATH to clipboard");
                     return true;
                 },
             }
         };
-        List<Result> allResults = commands.Select((command, index) => new Result
+        List<Result> allResults = (from command in commands select new Result
         {
             Title = command.Name,
-            SubTitle = _getResultSubtitle(command, query),
+            SubTitle = getResultSubtitle(command, query),
             Action = command.Action,
-            IcoPath = "icon.png",
-            Score = index
+            IcoPath = "icon.png"
         }).ToList();
-        return _GetMatchedResults(allResults, query.Search);
+        return GetMatchedResults(allResults, query.Search);
     }
 }
