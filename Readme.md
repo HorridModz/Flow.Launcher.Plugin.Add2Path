@@ -37,43 +37,11 @@ for more info, see [System PATH](#system-path).
 - List all entries in PATH and copy to clipboard: `path list <!system or leave blank>`
 - Get current PATH value (semicolon delimited) and copy to clipboard: `path get <!system or leave blank>`
 
-#### Backup and Restore (for more info, see [Backup and Restore](#backup-and-restore)):
-
-- Manually backup the PATH: `path backup <!system or leave blank>`
-- Restore the PATH from the last automatic backup: `path restore <!system or leave blank>`
-- Restore the PATH from the last manual backup: `path restore !manual <!system or leave blank>`
-
 > [!NOTE]:
 > There is no `set` command because I can't think of any practical use
 > for it. Plus, completely overwriting your PATH can break a lot of things.
 > If you really want to do it anyway, you can do it manually via the
 > "Edit the system environment variables" screen.
-
-## Backup and Restore
-
-Every time you make a change to the PATH variable using Add2Path, a backup will be created. This backup will persist until the next
-change is made with Add2Path.
-To restore the backup, use:
-
-`path restore <!system or leave blank>`
-
-You can also create a manual backup. This backup is independent of the automatic one, and will persist until the next manual backup.
-
-`path backup <!system or leave blank>`
-
-To restore the manual backup, use the `!manual` flag:
-
-`path restore !manual <!system or leave blank>`
-
-> [!CAUTION]
-> Make sure to be careful whether you're backing up / restoring the **user** PATH or the **system** PATH.
-
-> [!NOTE]
-> The Windows `PATH` value is stored in the registry as `HKEY_CURRENT_USER\Environment\Path`, and
-> `HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment\Path` for the system path.
-> Add2Path's Backups are written under the same keys, with the entry names `PathBackup` / `PathBackupManual`.
->
-> These registry keys are stored in these locations because they are logical places, but they shouldn't be accessed by anything other than Add2Path.
 
 ## New in Version 2.0
 
