@@ -13,6 +13,7 @@ using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 using System.ComponentModel;
 using Microsoft.VisualBasic;
+using System.Security.Cryptography;
 
 namespace Flow.Launcher.Plugin.Add2Path;
 
@@ -121,6 +122,29 @@ public class Add2Path : IPlugin
             Context.API.ShowMsg("WARNING: Directory does not exist", $"The directory \"{folderPath}\" does not exist. Did you mistype it?");
         }
         return true;
+    }
+
+    private static void Display(string message)
+    {
+        /*
+         * HACK: FlowLauncher doesn't have a popup functionality (>:( https://github.com/Flow-Launcher/Flow.Launcher/issues/3626), so
+         * we simply open a cmd window and run "echo" with the message, and then "pause" so it waits for user input.
+        */
+
+        // Echo does not work with newlines - instead, actually call a new "echo" for each line
+        String echo = message.Replace("\n", "& echo ");
+        Process process = new Process()
+        {
+            StartInfo = new ProcessStartInfo
+            {
+                FileName = "cmd.exe",
+                Arguments = $"/c echo {PathUtils._EncodeParameterArgument(echo).Trim('"')} & pause",
+                RedirectStandardOutput = false,
+                UseShellExecute = true,
+            }
+        };
+        process.Start();
+        process.WaitForExit();
     }
 
     private static string getResultSubtitle(Add2PathCommand command, Query query)
@@ -289,6 +313,7 @@ public class Add2Path : IPlugin
                     }
                     Clipboard.SetText(pathliststring);
                     Context.API.ShowMsg($"Copied {(system ? "system" : "user")} PATH to clipboard");
+                    Display(pathliststring);
                     return true;
                 },
             },
@@ -317,6 +342,7 @@ public class Add2Path : IPlugin
                     }
                     Clipboard.SetText(pathstring);
                     Context.API.ShowMsg($"Copied {(system ? "system" : "user")} PATH to clipboard");
+                    Display(pathstring);
                     return true;
                 },
             }
